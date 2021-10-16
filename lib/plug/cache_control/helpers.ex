@@ -17,27 +17,16 @@ defmodule Plug.CacheControl.Helpers do
           | :years
   @type duration :: {integer(), unit()}
 
-  @doc """
-  Checks whether a connection method is cacheable according to the HTTP
-  standard.
-  """
-  @spec is_cacheable(term()) :: Macro.t()
-  defguard is_cacheable(method) when method in ["GET", "HEAD", "POST"]
-
   @spec expires_in(Conn.t(), integer() | duration(), Enum.t()) :: Conn.t()
-  def expires_in(conn, duration, opts \\ [])
-
-  def expires_in(%Conn{method: method} = conn, duration, opts) when is_cacheable(method) do
+  def expires_in(%Conn{} = conn, duration, opts \\ []) do
     set_expires_in(conn, duration, opts)
   end
-
-  def expires_in(conn, _duration, _opts), do: conn
 
   defp set_expires_in(conn, seconds, opts) when is_integer(seconds) and seconds >= 0 do
     set_expires_in(conn, {seconds, :seconds}, opts)
   end
 
-  defp set_expires_in(%Conn{} = conn, {_, _} = duration, opts) do
+  defp set_expires_in(conn, {_, _} = duration, opts) do
     opts =
       opts
       |> normalize_opts()
@@ -47,15 +36,11 @@ defmodule Plug.CacheControl.Helpers do
   end
 
   @spec expires_now(Conn.t(), Enum.t()) :: Conn.t()
-  def expires_now(conn, opts \\ [])
-
-  def expires_now(%Conn{method: method} = conn, opts) when is_cacheable(method) do
+  def expires_now(%Conn{} = conn, opts \\ []) do
     set_expires_now(conn, opts)
   end
 
-  def expires_now(conn, _opts), do: conn
-
-  defp set_expires_now(%Conn{} = conn, opts) do
+  defp set_expires_now(conn, opts) do
     opts =
       opts
       |> normalize_opts()
@@ -64,7 +49,7 @@ defmodule Plug.CacheControl.Helpers do
     patch_header_value(conn, opts)
   end
 
-  def cached_forever(%Conn{} = conn, opts) do
+  def cached_forever(%Conn{} = conn, opts \\ []) do
     opts =
       opts
       |> normalize_opts()
@@ -73,7 +58,7 @@ defmodule Plug.CacheControl.Helpers do
     patch_header_value(conn, opts)
   end
 
-  def cached_never(%Conn{} = conn, _opts) do
+  def cached_never(%Conn{} = conn) do
     put_cache_control(conn, [:no_store, max_age: 0])
   end
 
