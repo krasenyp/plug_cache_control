@@ -11,8 +11,6 @@ defmodule Plug.CacheControl do
   @typep default_opt :: {:default, list()}
   @type opt :: dynamic_opt() | default_opt()
 
-  defguardp is_cacheable(method) when method in ["GET", "HEAD", "POST"]
-
   @spec init([opt]) :: [function()]
   def init(opts) do
     defaults = %{dynamic: nil, default: []}
@@ -30,7 +28,7 @@ defmodule Plug.CacheControl do
   end
 
   @spec call(Plug.Conn.t(), [function()]) :: Plug.Conn.t()
-  def call(%Plug.Conn{method: method} = conn, [fun]) when is_cacheable(method) do
+  def call(%Plug.Conn{} = conn, [fun]) do
     Helpers.put_cache_control(conn, fun.(conn))
   end
 
