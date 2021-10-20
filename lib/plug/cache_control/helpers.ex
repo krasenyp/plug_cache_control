@@ -1,4 +1,9 @@
 defmodule Plug.CacheControl.Helpers do
+  @moduledoc """
+  Contains helper functions for working with cache-control header on Plug
+  connections.
+  """
+
   alias Plug.CacheControl.Header
   alias Plug.Conn
 
