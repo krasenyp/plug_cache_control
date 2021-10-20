@@ -31,7 +31,7 @@ defmodule Plug.CacheControl.Header do
   ]
 
   @spec new() :: t()
-  def new(), do: %__MODULE__{}
+  def new, do: %__MODULE__{}
 
   @spec new(Enum.t()) :: t()
   def new(fields) do
