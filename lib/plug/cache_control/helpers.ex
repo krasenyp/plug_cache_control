@@ -17,6 +17,9 @@ defmodule Plug.CacheControl.Helpers do
           | :years
   @type duration :: {integer(), unit()}
 
+  @doc """
+  Sets a period after which the response should be considered stale.
+  """
   @spec expires_in(Conn.t(), integer() | duration(), Enum.t()) :: Conn.t()
   def expires_in(%Conn{} = conn, duration, opts \\ []) do
     set_expires_in(conn, duration, opts)
@@ -35,6 +38,9 @@ defmodule Plug.CacheControl.Helpers do
     patch_header_value(conn, opts)
   end
 
+  @doc """
+  Marks the response as stale from the get-go.
+  """
   @spec expires_now(Conn.t(), Enum.t()) :: Conn.t()
   def expires_now(%Conn{} = conn, opts \\ []) do
     set_expires_now(conn, opts)
@@ -49,6 +55,10 @@ defmodule Plug.CacheControl.Helpers do
     patch_header_value(conn, opts)
   end
 
+  @doc """
+  Sets an expiration period of 100 years.
+  """
+  @spec cached_forever(Conn.t(), Enum.t()) :: Conn.t()
   def cached_forever(%Conn{} = conn, opts \\ []) do
     opts =
       opts
@@ -58,8 +68,12 @@ defmodule Plug.CacheControl.Helpers do
     patch_header_value(conn, opts)
   end
 
+  @doc """
+  Marks the response as uncacheable.
+  """
+  @spec cached_never(Conn.t()) :: Conn.t()
   def cached_never(%Conn{} = conn) do
-    put_cache_control(conn, [:no_store, max_age: 0])
+    put_cache_control(conn, [:no_store])
   end
 
   @doc """
