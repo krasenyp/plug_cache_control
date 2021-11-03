@@ -7,29 +7,27 @@ defmodule Plug.CacheControl do
 
   alias Plug.CacheControl.Helpers
 
-  @typep dynamic_opt :: {:dynamic, function()}
-  @typep default_opt :: {:default, list()}
-  @type opt :: dynamic_opt() | default_opt()
+  @impl Plug
+  def init(opts), do: do_init(Enum.into(opts, %{}))
 
-  @spec init([opt]) :: [function()]
-  def init(opts) do
-    defaults = %{dynamic: nil, default: []}
-
-    case Enum.into(opts, defaults) do
-      %{dynamic: fun, default: nil} when is_function(fun, 2) ->
-        [fun]
-
-      %{dynamic: nil, default: clauses} ->
-        [fn _ -> clauses end]
-
-      _ ->
-        raise ArgumentError, "Provide either a default or a dynamic option."
-    end
+  defp do_init(%{directives: dir}) when is_list(dir) do
+    %{directives: fn _ -> dir end}
   end
 
-  @spec call(Plug.Conn.t(), [function()]) :: Plug.Conn.t()
-  def call(%Plug.Conn{} = conn, [fun]) do
-    Helpers.put_cache_control(conn, fun.(conn))
+  defp do_init(%{directives: dir}) when is_function(dir, 2) do
+    %{directives: dir}
+  end
+
+  defp do_init(_) do
+    raise ArgumentError,
+          "Provide a :directives option with list of directives or a unary \
+          function taking connection as first argument and returning a list of \
+          directives.."
+  end
+
+  @impl Plug
+  def call(%Plug.Conn{} = conn, %{directives: dir}) do
+    Helpers.put_cache_control(conn, dir.(conn))
   end
 
   def call(conn, _opts), do: conn

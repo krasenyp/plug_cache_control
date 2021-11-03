@@ -34,23 +34,23 @@ defmodule Plug.CacheControl.Header do
   def new, do: %__MODULE__{}
 
   @spec new(Enum.t()) :: t()
-  def new(fields) do
-    put_many(%__MODULE__{}, fields)
+  def new(directives) do
+    put_many(%__MODULE__{}, directives)
   end
 
   @spec put(t(), {atom(), term()}) :: t()
-  def put(%__MODULE__{} = header, {field, value}) do
-    do_put(header, field, value)
+  def put(%__MODULE__{} = header, {directive, value}) do
+    do_put(header, directive, value)
   end
 
   @spec put(t(), atom(), term()) :: t()
-  def put(%__MODULE__{} = header, field, value) do
-    do_put(header, field, value)
+  def put(%__MODULE__{} = header, directive, value) do
+    do_put(header, directive, value)
   end
 
   @spec put_many(t(), Enum.t()) :: t()
-  def put_many(%__MODULE__{} = header, fields) do
-    Enum.reduce(fields, header, fn clause, header -> put(header, clause) end)
+  def put_many(%__MODULE__{} = header, directives) do
+    Enum.reduce(directives, header, fn directive, header -> put(header, directive) end)
   end
 
   defp do_put(header, :public, value) do
@@ -67,12 +67,12 @@ defmodule Plug.CacheControl.Header do
     %{header | no_cache: "\"#{joined_fields}\""}
   end
 
-  defp do_put(header, field, {_, _} = duration) do
-    do_put(header, field, duration_to_seconds(duration))
+  defp do_put(header, directive, {_, _} = duration) do
+    do_put(header, directive, duration_to_seconds(duration))
   end
 
-  defp do_put(header, field, value) do
-    struct_put!(header, field, value)
+  defp do_put(header, directive, value) do
+    struct_put!(header, directive, value)
   end
 
   @spec from_string(String.t()) :: t()
@@ -82,8 +82,8 @@ defmodule Plug.CacheControl.Header do
     |> Enum.map(&String.trim/1)
     |> Enum.map(&String.split(&1, "=", trim: true))
     |> Enum.map(fn
-      [key] -> {field_to_atom(key), true}
-      [key, value] -> {field_to_atom(key), value}
+      [key] -> {directive_to_atom(key), true}
+      [key, value] -> {directive_to_atom(key), value}
     end)
     |> new()
   end
@@ -106,14 +106,14 @@ defmodule Plug.CacheControl.Header do
   defp duration_to_seconds({period, unit}) when unit in [:year, :years],
     do: period * 60 * 60 * 24 * 365
 
-  defp field_to_atom(field) when is_binary(field) do
-    field
+  defp directive_to_atom(directive) when is_binary(directive) do
+    directive
     |> String.replace("-", "_")
     |> String.to_existing_atom()
   end
 
-  defp struct_put!(struct, field, value) when is_atom(field) do
-    to_merge = Map.put(%{}, field, value)
+  defp struct_put!(struct, directive, value) when is_atom(directive) do
+    to_merge = Map.put(%{}, directive, value)
 
     struct!(struct, to_merge)
   end
@@ -125,13 +125,13 @@ defmodule Plug.CacheControl.Header do
       |> Enum.reduce([], fn
         {_key, nil}, acc -> acc
         {_key, false}, acc -> acc
-        {key, true}, acc -> [atom_to_field(key) | acc]
-        {key, value}, acc -> ["#{atom_to_field(key)}=#{value}" | acc]
+        {key, true}, acc -> [atom_to_directive(key) | acc]
+        {key, value}, acc -> ["#{atom_to_directive(key)}=#{value}" | acc]
       end)
       |> Enum.join(", ")
     end
 
-    defp atom_to_field(atom) when is_atom(atom) do
+    defp atom_to_directive(atom) when is_atom(atom) do
       atom
       |> Atom.to_string()
       |> String.replace("_", "-")
