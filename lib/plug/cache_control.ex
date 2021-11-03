@@ -1,6 +1,64 @@
 defmodule Plug.CacheControl do
   @moduledoc """
-  A plug for overwriting the default `cache-control` header.
+  A plug for overwriting the default `cache-control` header. The plug supports
+  all the response header directives defined in [RFC7234, section
+  5.2.2](https://datatracker.ietf.org/doc/html/rfc7234#section-5.2.2).
+
+  The plug takes a `directives` option which can specify either *static* or
+  *dynamic* header directives. Static directives are useful when you don't need
+  per-request directives. Static directives are defined very similarly to a
+  struct's key.
+
+      plug Plug.CacheControl, directives: [:public, max_age: {1, :hour}]
+
+  As seen in the above example, directive names with hyphens are mapped to atoms
+  by replacing the hyphens with underscores.
+
+  Boolean directives like `public`, `private`, `must-revalidate`, `no-store` and
+  so on can be included in the header value by simply including them in the
+  directives list e.g. no need for explicit `no_store: true` value. Note that as
+  per the standard, `no-cache` can also specify one or more fields. This is
+  supported via the definition below.
+
+      plug Plug.CacheControl, directives: [no_cache: ["somefield", "otherfield"]]
+
+  The `public` and `private` directives also have somewhat special handling so
+  you won't need to explicitly define `private: false` when you've used
+  `:public` in the "boolean section" of the directives list. Another important
+  thing is that if a directive is not included in the directives list, the
+  directive will be *omitted* from the header's value.
+
+  The values of the directives which have a delta-seconds values can be defined
+  directly as an integer representing the delta-seconds.
+
+      plug Plug.CacheControl, directives: [:public, max_age: 3600]
+
+  A unit tuple can also be used as in the following example.
+
+      plug Plug.CacheControl,
+        directives: [
+          :public,
+          max_age: {1, :hour},
+          stale_while_revalidate: {20, :minutes}
+        ]
+
+  Dynamic directives are useful when you might want to derive cache control
+  directives per-request. Maybe there's some other header value which you care
+  about or a dynamic configuration governing caching behaviour, dynamic
+  directives are for you.
+
+      plug Plug.CacheControl, directives: &__MODULE__.dyn_cc/1
+
+      # ...somewhere in the module...
+
+      defp dyn_cc(_conn) do
+        [:public, max_age: Cache.get(:max_age)]
+      end
+
+  As seen in the previous example, the only difference between static and
+  dynamic directives definition is that the latter is a unary function which
+  returns a directives list. The exact same rules that apply to the static
+  directives apply to the function's return value.
   """
 
   @behaviour Plug
@@ -14,7 +72,7 @@ defmodule Plug.CacheControl do
     %{directives: fn _ -> dir end}
   end
 
-  defp do_init(%{directives: dir}) when is_function(dir, 2) do
+  defp do_init(%{directives: dir}) when is_function(dir, 1) do
     %{directives: dir}
   end
 
