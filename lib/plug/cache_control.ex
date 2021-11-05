@@ -33,7 +33,10 @@ defmodule Plug.CacheControl do
 
       plug Plug.CacheControl, directives: [:public, max_age: 3600]
 
-  A unit tuple can also be used as in the following example.
+  A unit tuple can also be used to specify delta-seconds. The supported time
+  units are `second` `seconds`, `minute `minutes`, `hour`, `hours`, `day`,
+  `days`, `week`, `weeks`, `year`, `years`. The following example shows how unit
+  tuples can be used as a conveniece to define delta-seconds.
 
       plug Plug.CacheControl,
         directives: [
@@ -45,7 +48,7 @@ defmodule Plug.CacheControl do
   Dynamic directives are useful when you might want to derive cache control
   directives per-request. Maybe there's some other header value which you care
   about or a dynamic configuration governing caching behaviour, dynamic
-  directives are for you.
+  directives are the way to go.
 
       plug Plug.CacheControl, directives: &__MODULE__.dyn_cc/1
 
@@ -65,8 +68,16 @@ defmodule Plug.CacheControl do
 
   alias Plug.CacheControl.Helpers
 
+  @typep static :: Helpers.directive_opt()
+  @typep dynamic :: (Plug.Conn.t() -> Helpers.directive_opt())
+
   @impl Plug
-  def init(opts), do: do_init(Enum.into(opts, %{}))
+  @spec init([{:directives, static | dynamic}]) :: %{directives: dynamic}
+  def init(opts) do
+    opts
+    |> Enum.into(%{})
+    |> do_init()
+  end
 
   defp do_init(%{directives: dir}) when is_list(dir) do
     %{directives: fn _ -> dir end}
@@ -78,14 +89,17 @@ defmodule Plug.CacheControl do
 
   defp do_init(_) do
     raise ArgumentError,
-          "Provide a :directives option with list of directives or a unary \
+          "Provide a \"directives\" option with list of directives or a unary \
           function taking connection as first argument and returning a list of \
-          directives.."
+          directives."
   end
 
   @impl Plug
+  @spec call(Plug.Conn.t(), %{directives: dynamic}) :: Plug.Conn.t()
   def call(%Plug.Conn{} = conn, %{directives: dir}) do
-    Helpers.put_cache_control(conn, dir.(conn))
+    directives = dir.(conn)
+
+    Helpers.put_cache_control(conn, directives)
   end
 
   def call(conn, _opts), do: conn

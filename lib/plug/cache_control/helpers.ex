@@ -7,107 +7,76 @@ defmodule Plug.CacheControl.Helpers do
   alias Plug.CacheControl.Header
   alias Plug.Conn
 
-  @type unit ::
-          :second
-          | :seconds
-          | :minute
-          | :minutes
-          | :hour
-          | :hours
-          | :day
-          | :days
-          | :week
-          | :weeks
-          | :year
-          | :years
-  @type duration :: {integer(), unit()}
+  @typep unit ::
+           :second
+           | :seconds
+           | :minute
+           | :minutes
+           | :hour
+           | :hours
+           | :day
+           | :days
+           | :week
+           | :weeks
+           | :year
+           | :years
+
+  @typep delta(t) :: {t, integer | {integer(), unit()}}
+  @typep flag(t) :: t | {t, boolean()}
+
+  @typep flag_directive ::
+           :must_revalidate
+           | :no_cache
+           | :no_store
+           | :no_transform
+           | :proxy_revalidate
+           | :private
+           | :public
+
+  @typep delta_directive :: :max_age | :s_maxage | :stale_while_revalidate | :stale_if_error
+
+  @type directive_opt :: flag(flag_directive) | delta(delta_directive) | {:no_cache, String.t()}
 
   @doc """
-  Sets a period after which the response should be considered stale.
+  Serializes the cache control directives and sets them on the connection.
   """
-  @spec expires_in(Conn.t(), integer() | duration(), Enum.t()) :: Conn.t()
-  def expires_in(%Conn{} = conn, duration, opts \\ []) do
-    set_expires_in(conn, duration, opts)
-  end
-
-  defp set_expires_in(conn, seconds, opts) when is_integer(seconds) and seconds >= 0 do
-    set_expires_in(conn, {seconds, :seconds}, opts)
-  end
-
-  defp set_expires_in(conn, {_, _} = duration, opts) do
-    opts =
-      opts
-      |> normalize_opts()
-      |> Keyword.put(:max_age, duration)
-
-    patch_header_value(conn, opts)
-  end
-
-  @doc """
-  Marks the response as stale from the get-go.
-  """
-  @spec expires_now(Conn.t(), Enum.t()) :: Conn.t()
-  def expires_now(%Conn{} = conn, opts \\ []) do
-    set_expires_now(conn, opts)
-  end
-
-  defp set_expires_now(conn, opts) do
-    opts =
-      opts
-      |> normalize_opts()
-      |> Keyword.put(:max_age, 0)
-
-    patch_header_value(conn, opts)
-  end
-
-  @doc """
-  Sets an expiration period of 100 years.
-  """
-  @spec cached_forever(Conn.t(), Enum.t()) :: Conn.t()
-  def cached_forever(%Conn{} = conn, opts \\ []) do
-    opts =
-      opts
-      |> normalize_opts()
-      |> Keyword.put(:max_age, {100, :years})
-
-    patch_header_value(conn, opts)
-  end
-
-  @doc """
-  Marks the response as uncacheable.
-  """
-  @spec cached_never(Conn.t()) :: Conn.t()
-  def cached_never(%Conn{} = conn) do
-    put_cache_control(conn, [:no_store])
-  end
-
-  @doc """
-  Serializes the cache control clauses and sets them on the connection.
-  """
-  @spec put_cache_control(Conn.t(), [any()]) :: Conn.t()
-  def put_cache_control(conn, clauses) do
+  @spec put_cache_control(Conn.t(), [directive_opt()]) :: Conn.t()
+  def put_cache_control(conn, directives) do
     value =
-      clauses
-      |> normalize_opts()
+      directives
+      |> directives_to_keyword_list()
       |> Header.new()
       |> Header.to_string()
 
     Conn.put_resp_header(conn, "cache-control", value)
   end
 
-  defp patch_header_value(conn, opts) do
-    value =
+  @doc """
+  Merges directives into the current value of the `cache-control` header.
+  """
+  @spec merge_cache_control(Conn.t(), [directive_opt()]) :: Conn.t()
+  def merge_cache_control(conn, directives) do
+    current =
       conn
       |> Conn.get_resp_header("cache-control")
       |> List.first("")
       |> Header.from_string()
-      |> Header.put_many(opts)
+
+    updated =
+      directives
+      |> directives_to_keyword_list()
+      |> Header.new()
+
+    new =
+      current
+      |> Header.merge(updated)
       |> Header.to_string()
 
-    Conn.put_resp_header(conn, "cache-control", value)
+    Conn.put_resp_header(conn, "cache-control", new)
   end
 
-  defp normalize_opts(opts) when is_list(opts) do
+  @spec directives_to_keyword_list([directive_opt()]) :: list()
+  defp directives_to_keyword_list(directives) do
     mapper = fn
       {key, _} = tuple when is_atom(key) ->
         tuple
@@ -116,9 +85,9 @@ defmodule Plug.CacheControl.Helpers do
         {key, true}
 
       other ->
-        raise ArgumentError, "Options' names must be atoms, got: #{inspect(other)}"
+        raise ArgumentError, "Options' names must be atoms but got #{inspect(other)}"
     end
 
-    :lists.map(mapper, opts)
+    :lists.map(mapper, directives)
   end
 end
