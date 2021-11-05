@@ -34,7 +34,7 @@ defmodule Plug.CacheControl do
       plug Plug.CacheControl, directives: [:public, max_age: 3600]
 
   A unit tuple can also be used to specify delta-seconds. The supported time
-  units are `second` `seconds`, `minute `minutes`, `hour`, `hours`, `day`,
+  units are `second`, `seconds`, `minute`, `minutes`, `hour`, `hours`, `day`,
   `days`, `week`, `weeks`, `year`, `years`. The following example shows how unit
   tuples can be used as a conveniece to define delta-seconds.
 
