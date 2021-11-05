@@ -67,6 +67,7 @@ defmodule Plug.CacheControl do
   @behaviour Plug
 
   alias Plug.CacheControl.Helpers
+  alias Plug.Conn
 
   @typep static :: Helpers.directive_opt()
   @typep dynamic :: (Plug.Conn.t() -> Helpers.directive_opt())
@@ -95,8 +96,8 @@ defmodule Plug.CacheControl do
   end
 
   @impl Plug
-  @spec call(Plug.Conn.t(), %{directives: dynamic}) :: Plug.Conn.t()
-  def call(%Plug.Conn{} = conn, %{directives: dir}) do
+  @spec call(Conn.t(), %{directives: dynamic}) :: Conn.t()
+  def call(conn, %{directives: dir}) do
     directives = dir.(conn)
 
     Helpers.put_cache_control(conn, directives)

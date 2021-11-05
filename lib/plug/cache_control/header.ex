@@ -98,7 +98,7 @@ defmodule Plug.CacheControl.Header do
   end
 
   defp do_put(_, directive, _) when not is_directive(directive) do
-    raise ArgumentError, "Unsupported directive #{inspect(directive)}"
+    raise ArgumentError, "Invalid directive #{inspect(directive)}"
   end
 
   defp do_put(header, :public, value) when is_boolean(value) do
@@ -124,8 +124,12 @@ defmodule Plug.CacheControl.Header do
     struct_put!(header, directive, field)
   end
 
-  defp do_put(header, directive, value) when is_directive(directive) and is_boolean(value) do
+  defp do_put(header, directive, value) when is_boolean(value) do
     struct_put!(header, directive, value)
+  end
+
+  defp do_put(_, directive, value) do
+    raise ArgumentError, "Invalid value #{inspect(value)} for directive #{inspect(directive)}."
   end
 
   defimpl String.Chars do
