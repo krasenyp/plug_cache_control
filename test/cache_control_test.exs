@@ -1,11 +1,13 @@
-defmodule Plug.CacheControlTest do
-  use Plug.CacheControl.ConnCase
+defmodule PlugCacheControlTest do
+  use PlugCacheControl.ConnCase
 
-  alias Plug.CacheControl
+  alias PlugCacheControl
 
   test "puts flag directives correctly", %{conn: conn} do
-    opts = CacheControl.init(directives: [:public, :no_cache, :must_revalidate, no_cache: false])
-    header = conn |> CacheControl.call(opts) |> cache_control_header()
+    opts =
+      PlugCacheControl.init(directives: [:public, :no_cache, :must_revalidate, no_cache: false])
+
+    header = conn |> PlugCacheControl.call(opts) |> cache_control_header()
 
     assert header =~ "public"
     assert header =~ "must-revalidate"
@@ -13,26 +15,26 @@ defmodule Plug.CacheControlTest do
   end
 
   test "puts delta directives correctly", %{conn: conn} do
-    opts = CacheControl.init(directives: [max_age: {1, :hour}, s_maxage: 360])
-    header = conn |> CacheControl.call(opts) |> cache_control_header()
+    opts = PlugCacheControl.init(directives: [max_age: {1, :hour}, s_maxage: 360])
+    header = conn |> PlugCacheControl.call(opts) |> cache_control_header()
 
     assert header =~ "max-age=3600"
     assert header =~ "s-maxage=360"
   end
 
   test "puts no_cache fields correctly", %{conn: conn} do
-    opts = CacheControl.init(directives: [no_cache: ["id", "name"]])
-    header = conn |> CacheControl.call(opts) |> cache_control_header()
+    opts = PlugCacheControl.init(directives: [no_cache: ["id", "name"]])
+    header = conn |> PlugCacheControl.call(opts) |> cache_control_header()
 
     assert header =~ "no-cache=\"id, name\""
   end
 
   test "raises on non-existent directive", %{conn: conn} do
-    opts = CacheControl.init(directives: [:nonexistent])
+    opts = PlugCacheControl.init(directives: [:nonexistent])
 
     assert_raise ArgumentError, fn ->
       conn
-      |> CacheControl.call(opts)
+      |> PlugCacheControl.call(opts)
       |> cache_control_header()
     end
   end
@@ -49,9 +51,9 @@ defmodule Plug.CacheControlTest do
 
   defp argument_error(conn, directives: dir) do
     assert_raise ArgumentError, fn ->
-      opts = CacheControl.init(directives: dir)
+      opts = PlugCacheControl.init(directives: dir)
 
-      conn |> CacheControl.call(opts) |> cache_control_header()
+      conn |> PlugCacheControl.call(opts) |> cache_control_header()
     end
   end
 end

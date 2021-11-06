@@ -1,4 +1,4 @@
-defmodule Plug.CacheControl do
+defmodule PlugCacheControl do
   @moduledoc """
   A plug for overwriting the default `cache-control` header. The plug supports
   all the response header directives defined in [RFC7234, section
@@ -66,8 +66,8 @@ defmodule Plug.CacheControl do
 
   @behaviour Plug
 
-  alias Plug.CacheControl.Helpers
   alias Plug.Conn
+  alias PlugCacheControl.Helpers
 
   @typep static :: Helpers.directive_opt()
   @typep dynamic :: (Plug.Conn.t() -> Helpers.directive_opt())

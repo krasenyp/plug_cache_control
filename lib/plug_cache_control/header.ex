@@ -1,4 +1,4 @@
-defmodule Plug.CacheControl.Header do
+defmodule PlugCacheControl.Header do
   @moduledoc false
 
   @typep maybe(t) :: t | nil

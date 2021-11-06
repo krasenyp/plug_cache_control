@@ -1,4 +1,4 @@
-defmodule Plug.CacheControl.ConnCase do
+defmodule PlugCacheControl.ConnCase do
   @moduledoc false
 
   use ExUnit.CaseTemplate
@@ -8,7 +8,7 @@ defmodule Plug.CacheControl.ConnCase do
   using do
     quote do
       import Plug.Conn
-      import Plug.CacheControl.ConnCase
+      import PlugCacheControl.ConnCase
     end
   end
 
