@@ -1,36 +1,95 @@
-# Plug.CacheControl
+# Definition
 
-There are two methods of overwriting the default header value - static and
-dynamic. The static method can be used by providing a `default` option to the
-plug as shown below. The option's value must be a list of clauses and values if
-there're not boolean clauses.
+A plug + helpers for overwriting the default `cache-control` header. The plug
+supports all the response header directives defined in [RFC7234, section
+5.2.2](https://datatracker.ietf.org/doc/html/rfc7234#section-5.2.2).
 
-```
-plug Plug.CacheControl, default: [:public, max_age: {1, :day}]
+## The plug
+
+The `PlugCacheControl` plug takes a `directives` option which can specify either
+_static_ or _dynamic_ header directives. Static directives are useful when you
+don't need per-request directives. Static directives are defined very similarly
+to a struct's key.
+
+```elixir
+plug PlugCacheControl, directives: [:public, max_age: {1, :hour}]
 ```
 
-The dynamic method of setting a value to the `cache-control` header can be used
-by providing a `dynamic` option to the plug as demonstrated below. The option's
-value must be a unary function, taking a `Plug.Conn` as an argument and
-returning a list of clauses.
+As seen in the above example, directive names with hyphens are mapped to atoms
+by replacing the hyphens with underscores.
 
+Boolean directives like `public`, `private`, `must-revalidate`, `no-store` and
+so on can be included in the header value by simply including them in the
+directives list e.g. no need for explicit `no_store: true` value. Note that as
+per the standard, `no-cache` can also specify one or more fields. This is
+supported via the definition below.
+
+```elixir
+plug PlugCacheControl, directives: [no_cache: ["somefield", "otherfield"]]
 ```
-plug Plug.CacheControl, dynamic: &SomeMod.get_dynamic_clauses/1
+
+The `public` and `private` directives also have somewhat special handling so you
+won't need to explicitly define `private: false` when you've used `:public` in
+the "boolean section" of the directives list. Another important thing is that if
+a directive is not included in the directives list, the directive will be
+_omitted_ from the header's value.
+
+The values of the directives which have a delta-seconds values can be defined
+directly as an integer representing the delta-seconds.
+
+```elixir
+plug PlugCacheControl, directives: [:public, max_age: 3600]
 ```
+
+A unit tuple can also be used to specify delta-seconds. The supported time units
+are `second`, `seconds`, `minute`, `minutes`, `hour`, `hours`, `day`, `days`,
+`week`, `weeks`, `year`, `years`. The following example shows how unit tuples
+can be used as a conveniece to define delta-seconds.
+
+```elixir
+plug PlugCacheControl,
+  directives: [
+    :public,
+    max_age: {1, :hour},
+    stale_while_revalidate: {20, :minutes}
+  ]
+```
+
+Dynamic directives are useful when you might want to derive cache control
+directives per-request. Maybe there's some other header value which you care
+about or a dynamic configuration governing caching behaviour, dynamic directives
+are the way to go.
+
+```elixir
+plug PlugCacheControl, directives: &**MODULE**.dyn_cc/1
+
+# ...somewhere in the module...
+
+defp dyn_cc(\_conn) do
+  [:public, max_age: Cache.get(:max_age)]
+end
+```
+
+As seen in the previous example, the only difference between static and dynamic
+directives definition is that the latter is a unary function which returns a
+directives list. The exact same rules that apply to the static directives apply
+to the function's return value.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `plug_cache_control` to your list of dependencies in `mix.exs`:
+Package is [available in Hex](https://hex.pm/docs/plug_cache_control) and can be
+installed by adding `plug_cache_control` to your list of dependencies in
+`mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:plug_cache_control, "~> 0.1.0"}
+    {:plug_cache_control, "~> 0.2.0"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/plug_cache_control](https://hexdocs.pm/plug_cache_control).
+Documentation can be generated with
+[ExDoc](https://github.com/elixir-lang/ex_doc) and published on
+[HexDocs](https://hexdocs.pm). Once published, the docs can be found at
+[https://hexdocs.pm/plug_cache_control](https://hexdocs.pm/plug_cache_control).
