@@ -2,7 +2,7 @@ defmodule PlugCacheControl.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/krasenyp/plug_cache_control"
-  @version "0.2.0"
+  @version "0.2.1"
 
   def project do
     [
@@ -36,7 +36,7 @@ defmodule PlugCacheControl.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:plug_cowboy, "~> 2.5"},
+      {:plug, "~> 1.12"},
       {:ex_doc, "~> 0.25", only: :dev, runtime: false},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false}
     ]
