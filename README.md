@@ -61,7 +61,7 @@ about or a dynamic configuration governing caching behaviour, dynamic directives
 are the way to go.
 
 ```elixir
-plug PlugCacheControl, directives: &**MODULE**.dyn_cc/1
+plug PlugCacheControl, directives: &__MODULE__.dyn_cc/1
 
 # ...somewhere in the module...
 
