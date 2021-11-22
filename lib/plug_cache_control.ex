@@ -9,7 +9,7 @@ defmodule PlugCacheControl do
   per-request directives. Static directives are defined very similarly to a
   struct's key.
 
-      plug Plug.CacheControl, directives: [:public, max_age: {1, :hour}]
+      plug PlugCacheControl, directives: [:public, max_age: {1, :hour}]
 
   As seen in the above example, directive names with hyphens are mapped to atoms
   by replacing the hyphens with underscores.
@@ -20,7 +20,7 @@ defmodule PlugCacheControl do
   per the standard, `no-cache` can also specify one or more fields. This is
   supported via the definition below.
 
-      plug Plug.CacheControl, directives: [no_cache: ["somefield", "otherfield"]]
+      plug PlugCacheControl, directives: [no_cache: ["somefield", "otherfield"]]
 
   The `public` and `private` directives also have somewhat special handling so
   you won't need to explicitly define `private: false` when you've used
@@ -31,14 +31,14 @@ defmodule PlugCacheControl do
   The values of the directives which have a delta-seconds values can be defined
   directly as an integer representing the delta-seconds.
 
-      plug Plug.CacheControl, directives: [:public, max_age: 3600]
+      plug PlugCacheControl, directives: [:public, max_age: 3600]
 
   A unit tuple can also be used to specify delta-seconds. The supported time
   units are `second`, `seconds`, `minute`, `minutes`, `hour`, `hours`, `day`,
   `days`, `week`, `weeks`, `year`, `years`. The following example shows how unit
   tuples can be used as a conveniece to define delta-seconds.
 
-      plug Plug.CacheControl,
+      plug PlugCacheControl,
         directives: [
           :public,
           max_age: {1, :hour},
@@ -50,7 +50,7 @@ defmodule PlugCacheControl do
   about or a dynamic configuration governing caching behaviour, dynamic
   directives are the way to go.
 
-      plug Plug.CacheControl, directives: &__MODULE__.dyn_cc/1
+      plug PlugCacheControl, directives: &__MODULE__.dyn_cc/1
 
       # ...somewhere in the module...
 

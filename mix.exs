@@ -53,7 +53,7 @@ defmodule PlugCacheControl.MixProject do
 
   defp docs do
     [
-      main: "Plug.CacheControl",
+      main: "PlugCacheControl",
       source_ref: "v#{@version}"
     ]
   end
