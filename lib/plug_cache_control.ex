@@ -77,18 +77,14 @@ defmodule PlugCacheControl do
   def init(opts) do
     opts
     |> Enum.into(%{})
-    |> do_init()
+    |> validate_opts!()
   end
 
-  defp do_init(%{directives: dir}) when is_list(dir) do
-    %{directives: fn _ -> dir end}
+  defp validate_opts!(%{directives: dir} = opts) when is_list(dir) or is_function(dir, 1) do
+    opts
   end
 
-  defp do_init(%{directives: dir}) when is_function(dir, 1) do
-    %{directives: dir}
-  end
-
-  defp do_init(_) do
+  defp validate_opts!(_) do
     raise ArgumentError,
           "Provide a \"directives\" option with list of directives or a unary \
           function taking connection as first argument and returning a list of \
@@ -96,11 +92,13 @@ defmodule PlugCacheControl do
   end
 
   @impl Plug
-  @spec call(Conn.t(), %{directives: dynamic}) :: Conn.t()
-  def call(conn, %{directives: dir}) do
-    directives = dir.(conn)
+  @spec call(Conn.t(), %{directives: static | dynamic}) :: Conn.t()
+  def call(conn, %{directives: fun}) when is_function(fun, 1) do
+    Helpers.put_cache_control(conn, fun.(conn))
+  end
 
-    Helpers.put_cache_control(conn, directives)
+  def call(conn, %{directives: dir}) do
+    Helpers.put_cache_control(conn, dir)
   end
 
   def call(conn, _opts), do: conn
