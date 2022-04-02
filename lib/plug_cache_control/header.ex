@@ -69,29 +69,6 @@ defmodule PlugCacheControl.Header do
     end)
   end
 
-  @spec merge(t(), t()) :: t()
-  def merge(%__MODULE__{} = ha, %__MODULE__{} = hb) do
-    ham = Map.from_struct(ha)
-    hbm = Map.from_struct(hb)
-
-    ham
-    |> Map.merge(hbm)
-    |> new()
-  end
-
-  @spec from_string(String.t()) :: t()
-  def from_string(str) when is_binary(str) do
-    str
-    |> String.split(",", trim: true)
-    |> Enum.map(&String.trim/1)
-    |> Enum.map(&String.split(&1, "=", trim: true))
-    |> Enum.map(fn
-      [key] -> {directive_to_atom(key), true}
-      [key, value] -> {directive_to_atom(key), value}
-    end)
-    |> new()
-  end
-
   @spec to_string(t()) :: String.t()
   def to_string(%__MODULE__{} = header) do
     Kernel.to_string(header)
@@ -170,12 +147,6 @@ defmodule PlugCacheControl.Header do
 
   defp do_duration_to_seconds({_, unit}),
     do: raise(ArgumentError, "Invalid unit #{inspect(unit)}.")
-
-  defp directive_to_atom(directive) when is_binary(directive) do
-    directive
-    |> String.replace("-", "_")
-    |> String.to_existing_atom()
-  end
 
   defp struct_put!(struct, field, value) when is_struct(struct) and is_atom(field) do
     to_merge = Map.put(%{}, field, value)

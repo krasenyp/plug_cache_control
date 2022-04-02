@@ -38,13 +38,14 @@ defmodule PlugCacheControl.Helpers do
   @type directive_opt :: flag(flag_directive) | delta(delta_directive) | {:no_cache, String.t()}
 
   @doc """
-  Serializes the cache control directives and sets them on the connection.
+  Serializes the cache control directives and sets them on the connection,
+  overwriting the existing header value.
   """
   @spec put_cache_control(Conn.t(), [directive_opt()]) :: Conn.t()
   def put_cache_control(conn, directives) do
     value =
       directives
-      |> directives_to_keyword_list()
+      |> directives_to_map()
       |> Header.new()
       |> Header.to_string()
 
@@ -56,38 +57,58 @@ defmodule PlugCacheControl.Helpers do
   """
   @spec merge_cache_control(Conn.t(), [directive_opt()]) :: Conn.t()
   def merge_cache_control(conn, directives) do
-    current =
+    new_value =
       conn
       |> Conn.get_resp_header("cache-control")
       |> List.first("")
-      |> Header.from_string()
+      |> merge_cache_control_value(directives)
 
-    updated =
-      directives
-      |> directives_to_keyword_list()
-      |> Header.new()
-
-    new =
-      current
-      |> Header.merge(updated)
-      |> Header.to_string()
-
-    Conn.put_resp_header(conn, "cache-control", new)
+    Conn.put_resp_header(conn, "cache-control", new_value)
   end
 
-  @spec directives_to_keyword_list([directive_opt()]) :: list()
-  defp directives_to_keyword_list(directives) do
+  defp merge_cache_control_value(value, directives) when is_binary(value) do
+    current = map_from_header(value)
+    updated = directives_to_map(directives)
+
+    current
+    |> Map.merge(updated)
+    |> Header.new()
+    |> Header.to_string()
+  end
+
+  defp directives_to_map(directives) do
     mapper = fn
       {key, _} = tuple when is_atom(key) ->
         tuple
 
       key when is_atom(key) ->
         {key, true}
-
-      other ->
-        raise ArgumentError, "Options' names must be atoms but got #{inspect(other)}"
     end
 
-    :lists.map(mapper, directives)
+    directives
+    |> Enum.map(mapper)
+    |> Enum.into(%{})
+  end
+
+  defp map_from_header(str) when is_binary(str) do
+    str
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.map(&String.split(&1, "=", trim: true))
+    |> Enum.map(fn
+      [key] -> {directive_to_atom(key), true}
+      [key, value] -> {directive_to_atom(key), value}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp directive_to_atom(directive) when is_binary(directive) do
+    directive
+    |> camel_to_snake_case()
+    |> String.to_existing_atom()
+  end
+
+  defp camel_to_snake_case(str) do
+    String.replace(str, "-", "_")
   end
 end
