@@ -4,7 +4,7 @@ A plug + helpers for overwriting the default `cache-control` header. The plug
 supports all the response header directives defined in [RFC7234, section
 5.2.2](https://datatracker.ietf.org/doc/html/rfc7234#section-5.2.2).
 
-## The plug
+## Header directives
 
 The `PlugCacheControl` plug takes a `directives` option which can specify either
 _static_ or _dynamic_ header directives. Static directives are useful when you
@@ -74,6 +74,19 @@ As seen in the previous example, the only difference between static and dynamic
 directives definition is that the latter is a unary function which returns a
 directives list. The exact same rules that apply to the static directives apply
 to the function's return value.
+
+## A note on behaviour
+
+The first time the plug is called on a connection, the existing value of the
+Cache-Control header is _replaced_ by the user-defined one. A private field
+which signifies the header value is overwritten is put on the connection struct.
+On subsequent calls of the plug, the provided directives' definitions are
+_merged_ with the header values. This allows the user to build up the
+Cache-Control header value.
+
+Of course, if one wants to replace the header value on a connection that has an
+already overwritten value, one can use the
+`PlugCacheControl.Helpers.put_cache_control` function.
 
 ## Installation
 

@@ -4,6 +4,7 @@ defmodule PlugCacheControl.ConnCase do
   use ExUnit.CaseTemplate
 
   alias Plug.Conn
+  alias PlugCacheControl
 
   using do
     quote do
@@ -20,6 +21,14 @@ defmodule PlugCacheControl.ConnCase do
     conn
     |> Conn.get_resp_header("cache-control")
     |> List.first()
+  end
+
+  def apply_directives(conn, dir) do
+    opts = PlugCacheControl.init(directives: dir)
+    conn = PlugCacheControl.call(conn, opts)
+    header = cache_control_header(conn)
+
+    {header, conn}
   end
 
   defp build_conn do

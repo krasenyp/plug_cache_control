@@ -1,13 +1,15 @@
 defmodule PlugCacheControl do
   @moduledoc """
-  A plug for overwriting the default `cache-control` header. The plug supports
-  all the response header directives defined in [RFC7234, section
+  A plug + helpers for overwriting the default `cache-control` header. The plug
+  supports all the response header directives defined in [RFC7234, section
   5.2.2](https://datatracker.ietf.org/doc/html/rfc7234#section-5.2.2).
 
-  The plug takes a `directives` option which can specify either *static* or
-  *dynamic* header directives. Static directives are useful when you don't need
-  per-request directives. Static directives are defined very similarly to a
-  struct's key.
+  ## Header directives
+
+  The `PlugCacheControl` plug takes a `directives` option which can specify
+  either _static_ or _dynamic_ header directives. Static directives are useful
+  when you don't need per-request directives. Static directives are defined very
+  similarly to a struct's key.
 
       plug PlugCacheControl, directives: [:public, max_age: {1, :hour}]
 
@@ -26,7 +28,7 @@ defmodule PlugCacheControl do
   you won't need to explicitly define `private: false` when you've used
   `:public` in the "boolean section" of the directives list. Another important
   thing is that if a directive is not included in the directives list, the
-  directive will be *omitted* from the header's value.
+  directive will be _omitted_ from the header's value.
 
   The values of the directives which have a delta-seconds values can be defined
   directly as an integer representing the delta-seconds.
@@ -62,6 +64,19 @@ defmodule PlugCacheControl do
   dynamic directives definition is that the latter is a unary function which
   returns a directives list. The exact same rules that apply to the static
   directives apply to the function's return value.
+
+  ## A note on behaviour
+
+  The first time the plug is called on a connection, the existing value of the
+  Cache-Control header is _replaced_ by the user-defined one. A private field
+  which signifies the header value is overwritten is put on the connection
+  struct. On subsequent calls of the plug, the provided directives' definitions
+  are _merged_ with the header values. This allows the user to build up the
+  Cache-Control header value.
+
+  Of course, if one wants to replace the header value on a connection that has
+  an already overwritten value, one can use the
+  `PlugCacheControl.Helpers.put_cache_control` function.
   """
 
   @behaviour Plug
@@ -80,6 +95,22 @@ defmodule PlugCacheControl do
     |> validate_opts!()
   end
 
+  @impl Plug
+  @spec call(Conn.t(), %{directives: static() | dynamic()}) :: Conn.t()
+  def call(conn, %{directives: fun}) when is_function(fun, 1) do
+    call(conn, %{directives: fun.(conn)})
+  end
+
+  def call(%Conn{private: %{cach_control_overwritten: _}} = conn, %{directives: dir}) do
+    Helpers.merge_cache_control(conn, dir)
+  end
+
+  def call(%Conn{} = conn, %{directives: dir}) do
+    Helpers.put_cache_control(conn, dir)
+  end
+
+  def call(conn, _opts), do: conn
+
   defp validate_opts!(%{directives: dir} = opts) when is_list(dir) or is_function(dir, 1) do
     opts
   end
@@ -90,16 +121,4 @@ defmodule PlugCacheControl do
           function taking connection as first argument and returning a list of \
           directives."
   end
-
-  @impl Plug
-  @spec call(Conn.t(), %{directives: static | dynamic}) :: Conn.t()
-  def call(conn, %{directives: fun}) when is_function(fun, 1) do
-    Helpers.put_cache_control(conn, fun.(conn))
-  end
-
-  def call(conn, %{directives: dir}) do
-    Helpers.put_cache_control(conn, dir)
-  end
-
-  def call(conn, _opts), do: conn
 end

@@ -49,7 +49,9 @@ defmodule PlugCacheControl.Helpers do
       |> Header.new()
       |> Header.to_string()
 
-    Conn.put_resp_header(conn, "cache-control", value)
+    conn
+    |> Conn.put_private(:cach_control_overwritten, true)
+    |> Conn.put_resp_header("cache-control", value)
   end
 
   @doc """
@@ -63,7 +65,9 @@ defmodule PlugCacheControl.Helpers do
       |> List.first("")
       |> merge_cache_control_value(directives)
 
-    Conn.put_resp_header(conn, "cache-control", new_value)
+    conn
+    |> Conn.put_private(:cach_control_overwritten, true)
+    |> Conn.put_resp_header("cache-control", new_value)
   end
 
   defp merge_cache_control_value(value, directives) when is_binary(value) do
