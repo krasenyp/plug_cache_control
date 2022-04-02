@@ -57,6 +57,16 @@ defmodule PlugCacheControlTest do
     refute sheader =~ "no-cache"
   end
 
+  test "replaces directives on subsequent calls when configured", %{conn: conn} do
+    {_, conn} = apply_directives(conn, [:public, :no_cache, :must_revalidate])
+    {sheader, _} = apply_directives(conn, [max_age: 3600], replace: true)
+
+    assert sheader =~ "max-age=3600"
+    refute sheader =~ "public"
+    refute sheader =~ "no-cache"
+    refute sheader =~ "must-revalidate"
+  end
+
   test "raises on non-existent directive", %{conn: conn} do
     assert_raise ArgumentError, fn ->
       apply_directives(conn, [:nonexistent])

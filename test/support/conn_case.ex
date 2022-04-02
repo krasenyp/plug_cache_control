@@ -23,8 +23,8 @@ defmodule PlugCacheControl.ConnCase do
     |> List.first()
   end
 
-  def apply_directives(conn, dir) do
-    opts = PlugCacheControl.init(directives: dir)
+  def apply_directives(conn, dir, opts \\ []) do
+    opts = PlugCacheControl.init(Keyword.merge([directives: dir], opts))
     conn = PlugCacheControl.call(conn, opts)
     header = cache_control_header(conn)
 

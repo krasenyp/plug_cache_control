@@ -74,9 +74,18 @@ defmodule PlugCacheControl do
   are _merged_ with the header values. This allows the user to build up the
   Cache-Control header value.
 
-  Of course, if one wants to replace the header value on a connection that has
-  an already overwritten value, one can use the
-  `PlugCacheControl.Helpers.put_cache_control` function.
+  Of course, if one wants to replace the header value on a connection that has an
+  already overwritten value, one can use the
+  `PlugCacheControl.Helpers.put_cache_control` function or provide a `replace:
+  true` option to the plug.
+
+      plug PlugCacheControl, directives: [...], replace: true
+
+  The latter approach allows for a finer-grained control and conditional
+  replacement of header values.
+
+      plug PlugCacheControl, [directives: [...], replace: true] when action == :index
+      plug PlugCacheControl, [directives: [...]] when action == :show
   """
 
   @behaviour Plug
@@ -92,6 +101,7 @@ defmodule PlugCacheControl do
   def init(opts) do
     opts
     |> Enum.into(%{})
+    |> with_default_opts()
     |> validate_opts!()
   end
 
@@ -99,6 +109,10 @@ defmodule PlugCacheControl do
   @spec call(Conn.t(), %{directives: static() | dynamic()}) :: Conn.t()
   def call(conn, %{directives: fun}) when is_function(fun, 1) do
     call(conn, %{directives: fun.(conn)})
+  end
+
+  def call(%Conn{} = conn, %{directives: dir, replace: true}) do
+    Helpers.put_cache_control(conn, dir)
   end
 
   def call(%Conn{private: %{cach_control_overwritten: _}} = conn, %{directives: dir}) do
@@ -111,7 +125,16 @@ defmodule PlugCacheControl do
 
   def call(conn, _opts), do: conn
 
-  defp validate_opts!(%{directives: dir} = opts) when is_list(dir) or is_function(dir, 1) do
+  defp with_default_opts(opts) do
+    default_opts = %{
+      replace: false
+    }
+
+    Map.merge(default_opts, opts)
+  end
+
+  defp validate_opts!(%{directives: dir, replace: replace} = opts)
+       when (is_list(dir) or is_function(dir, 1)) and is_boolean(replace) do
     opts
   end
 

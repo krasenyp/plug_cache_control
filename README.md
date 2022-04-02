@@ -86,7 +86,20 @@ Cache-Control header value.
 
 Of course, if one wants to replace the header value on a connection that has an
 already overwritten value, one can use the
-`PlugCacheControl.Helpers.put_cache_control` function.
+`PlugCacheControl.Helpers.put_cache_control` function or provide a `replace:
+true` option to the plug.
+
+``` elixir
+plug PlugCacheControl, directives: [...], replace: true
+```
+
+The latter approach allows for a finer-grained control and conditional
+replacement of header values.
+
+``` elixir
+plug PlugCacheControl, [directives: [...], replace: true] when action == :index
+plug PlugCacheControl, [directives: [...]] when action == :show
+```
 
 ## Installation
 
@@ -97,7 +110,7 @@ installed by adding `plug_cache_control` to your list of dependencies in
 ```elixir
 def deps do
   [
-    {:plug_cache_control, "~> 1.0.0"}
+    {:plug_cache_control, "~> 1.1.0"}
   ]
 end
 ```
