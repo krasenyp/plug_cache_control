@@ -97,7 +97,7 @@ installed by adding `plug_cache_control` to your list of dependencies in
 ```elixir
 def deps do
   [
-    {:plug_cache_control, "~> 0.2.2"}
+    {:plug_cache_control, "~> 1.0.0"}
   ]
 end
 ```
