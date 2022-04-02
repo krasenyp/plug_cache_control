@@ -37,8 +37,8 @@ defmodule PlugCacheControl.MixProject do
   defp deps do
     [
       {:plug, "~> 1.12"},
-      {:ex_doc, "~> 0.25", only: :dev, runtime: false},
-      {:credo, "~> 1.5", only: [:dev, :test], runtime: false}
+      {:ex_doc, "~> 0.28", only: :dev, runtime: false},
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false}
     ]
   end
 
