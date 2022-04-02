@@ -11,6 +11,9 @@ defmodule PlugCacheControl.MixProject do
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      elixirc_options: [
+        warnings_as_errors: halt_on_warnings?(Mix.env())
+      ],
       deps: deps(),
 
       # Hex
@@ -57,4 +60,7 @@ defmodule PlugCacheControl.MixProject do
       source_ref: "v#{@version}"
     ]
   end
+
+  defp halt_on_warnings?(:test), do: false
+  defp halt_on_warnings?(_), do: true
 end
