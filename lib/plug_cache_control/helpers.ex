@@ -49,25 +49,21 @@ defmodule PlugCacheControl.Helpers do
       |> Header.new()
       |> Header.to_string()
 
-    conn
-    |> Conn.put_private(:cach_control_overwritten, true)
-    |> Conn.put_resp_header("cache-control", value)
+    Conn.put_resp_header(conn, "cache-control", value)
   end
 
   @doc """
   Merges directives into the current value of the `cache-control` header.
   """
-  @spec merge_cache_control(Conn.t(), [directive_opt()]) :: Conn.t()
-  def merge_cache_control(conn, directives) do
+  @spec patch_cache_control(Conn.t(), [directive_opt()]) :: Conn.t()
+  def patch_cache_control(conn, directives) do
     new_value =
       conn
       |> Conn.get_resp_header("cache-control")
       |> List.first("")
       |> merge_cache_control_value(directives)
 
-    conn
-    |> Conn.put_private(:cach_control_overwritten, true)
-    |> Conn.put_resp_header("cache-control", new_value)
+    Conn.put_resp_header(conn, "cache-control", new_value)
   end
 
   defp merge_cache_control_value(value, directives) when is_binary(value) do

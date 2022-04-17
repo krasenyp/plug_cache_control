@@ -97,7 +97,7 @@ defmodule PlugCacheControl do
   @typep dynamic :: (Plug.Conn.t() -> Helpers.directive_opt())
 
   @impl Plug
-  @spec init([{:directives, static | dynamic}]) :: %{directives: dynamic}
+  @spec init([{:directives, static | dynamic}]) :: %{directives: dynamic, replace: boolean()}
   def init(opts) do
     opts
     |> Enum.into(%{})
@@ -106,24 +106,28 @@ defmodule PlugCacheControl do
   end
 
   @impl Plug
-  @spec call(Conn.t(), %{directives: static() | dynamic()}) :: Conn.t()
-  def call(conn, %{directives: fun}) when is_function(fun, 1) do
-    call(conn, %{directives: fun.(conn)})
+  @spec call(Conn.t(), %{directives: static() | dynamic(), replace: boolean()}) :: Conn.t()
+  def call(conn, %{directives: fun} = opts) when is_function(fun, 1) do
+    opts = Map.put(opts, :directives, fun.(conn))
+
+    call(conn, opts)
   end
 
   def call(%Conn{} = conn, %{directives: dir, replace: true}) do
-    Helpers.put_cache_control(conn, dir)
+    conn
+    |> Helpers.put_cache_control(dir)
+    |> Conn.put_private(:cache_control_overwritten, true)
   end
 
-  def call(%Conn{private: %{cach_control_overwritten: _}} = conn, %{directives: dir}) do
-    Helpers.merge_cache_control(conn, dir)
+  def call(%Conn{private: %{cache_control_overwritten: true}} = conn, %{directives: dir}) do
+    Helpers.patch_cache_control(conn, dir)
   end
 
   def call(%Conn{} = conn, %{directives: dir}) do
-    Helpers.put_cache_control(conn, dir)
+    conn
+    |> Helpers.put_cache_control(dir)
+    |> Conn.put_private(:cache_control_overwritten, true)
   end
-
-  def call(conn, _opts), do: conn
 
   defp with_default_opts(opts) do
     default_opts = %{
