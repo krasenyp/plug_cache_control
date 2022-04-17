@@ -52,6 +52,11 @@ defmodule PlugCacheControl.Helpers do
     Conn.put_resp_header(conn, "cache-control", value)
   end
 
+  @deprecated "Use `patch_cache_control/2` instead"
+  def merge_cache_control(conn, directives) do
+    patch_cache_control(conn, directives)
+  end
+
   @doc """
   Merges directives into the current value of the `cache-control` header.
   """
