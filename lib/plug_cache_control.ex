@@ -93,11 +93,14 @@ defmodule PlugCacheControl do
   alias Plug.Conn
   alias PlugCacheControl.Helpers
 
-  @typep static :: Helpers.directive_opt()
-  @typep dynamic :: (Plug.Conn.t() -> Helpers.directive_opt())
+  @typep static_dir :: Helpers.directive_opt()
+  @typep dynamic_dir :: (Plug.Conn.t() -> Helpers.directive_opt())
 
   @impl Plug
-  @spec init([{:directives, static | dynamic}]) :: %{directives: dynamic, replace: boolean()}
+  @spec init([{:directives, static_dir() | dynamic_dir()}]) :: %{
+          directives: dynamic_dir(),
+          replace: boolean()
+        }
   def init(opts) do
     opts
     |> Enum.into(%{})
@@ -106,7 +109,8 @@ defmodule PlugCacheControl do
   end
 
   @impl Plug
-  @spec call(Conn.t(), %{directives: static() | dynamic(), replace: boolean()}) :: Conn.t()
+  @spec call(Conn.t(), %{directives: static_dir() | dynamic_dir(), replace: boolean()}) ::
+          Conn.t()
   def call(conn, %{directives: fun} = opts) when is_function(fun, 1) do
     opts = Map.put(opts, :directives, fun.(conn))
 
